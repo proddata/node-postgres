@@ -2,6 +2,7 @@
 const helper = require('./test-helper')
 const BufferList = require('../../buffer-list')
 const assert = require('assert')
+const util = require('util')
 const suite = new helper.Suite()
 const test = suite.test.bind(suite)
 
@@ -126,6 +127,17 @@ test('client oauth authentication', function () {
 
     assert.lengthIs(client.connection.stream.packets, 1)
     assert.equalBuffers(client.connection.stream.packets[0], expectedInitialResponse('token'))
+  })
+
+  test('does not keep the bearer token on the client after sending the initial response', function () {
+    const token = 'FAIL THIS OAUTH BEARER TOKEN TEST'
+    const client = helper.createClient()
+    client.oauthBearerToken = token
+    client.connection.emit('authenticationSASL', { mechanisms: ['OAUTHBEARER'] })
+
+    assert.lengthIs(client.connection.stream.packets, 1)
+    assert(JSON.stringify(client.saslSession).indexOf(token) === -1)
+    assert(util.inspect(client, { depth: 20 }).indexOf(token) === -1)
   })
 
   test('sends OAUTHBEARER initial response with token callback', async function () {

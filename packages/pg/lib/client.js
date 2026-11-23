@@ -366,6 +366,11 @@ class Client extends EventEmitter {
           scramMaxIterations: this.scramMaxIterations,
         })
         this.connection.sendSASLInitialResponseMessage(this.saslSession.mechanism, this.saslSession.response)
+        if (this.saslSession.mechanism === 'OAUTHBEARER') {
+          // The initial response carries the bearer token, and a successful OAUTHBEARER exchange has no
+          // final message that would clear the session, so drop it once it has been sent.
+          this.saslSession.response = null
+        }
       } catch (err) {
         this.connection.emit('error', err)
       }

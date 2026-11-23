@@ -23,3 +23,15 @@ suite.test('pool with copied settings includes OAuth bearer token', () => {
 
   assert.equal(copy.options.oauthBearerToken, 'original')
 })
+
+suite.test('pool with a connection string passes the OAuth bearer token to its clients', () => {
+  const pool = new helper.pg.Pool({
+    connectionString: 'postgres://user@localhost/db',
+    oauthBearerToken: 'token',
+  })
+
+  const client = new helper.pg.Client(pool.options)
+
+  assert.equal(client.connectionParameters.oauthBearerToken, 'token')
+  assert.equal(client.oauthBearerToken, 'token')
+})

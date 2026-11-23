@@ -57,7 +57,13 @@ class ConnectionParameters {
     // if the config has a connectionString defined, parse IT into the config we use
     // this will override other default values with what is stored in connectionString
     if (config.connectionString) {
+      // pg-pool hides oauthBearerToken on its options (non-enumerable) and Object.assign only copies
+      // enumerable properties, so carry the token over explicitly.
+      const { oauthBearerToken } = config
       config = Object.assign({}, config, parse(config.connectionString))
+      if (oauthBearerToken !== undefined) {
+        config.oauthBearerToken = oauthBearerToken
+      }
     }
 
     this.user = val('user', config)

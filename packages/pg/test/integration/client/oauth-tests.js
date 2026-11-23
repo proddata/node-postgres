@@ -1,6 +1,7 @@
 'use strict'
 const helper = require('./../test-helper')
 const assert = require('assert')
+const util = require('util')
 const suite = new helper.Suite()
 const { pg } = helper
 
@@ -52,4 +53,29 @@ suite.test('can connect using an async OAuth bearer token callback', async () =>
 suite.test('rejects an invalid OAuth bearer token', async () => {
   const client = new pg.Client({ ...config, oauthBearerToken: token + '-invalid' })
   await assert.rejects(() => client.connect(), /invalid_token/)
+})
+
+suite.test('does not expose the OAuth bearer token on a connected client', async () => {
+  const client = new pg.Client({ ...config, oauthBearerToken: token })
+  await client.connect()
+  try {
+    assert(util.inspect(client, { depth: 20 }).indexOf(token) === -1)
+  } finally {
+    await client.end()
+  }
+})
+
+suite.test('can connect from a pool with a connection string and an OAuth bearer token', async () => {
+  const pool = new pg.Pool({
+    connectionString: `postgres://${config.user}@${config.host}:${config.port}/${config.database}`,
+    ssl: config.ssl,
+    connectionTimeoutMillis: config.connectionTimeoutMillis,
+    oauthBearerToken: token,
+  })
+  try {
+    const result = await pool.query('SELECT current_user')
+    assert.equal(result.rows[0].current_user, config.user)
+  } finally {
+    await pool.end()
+  }
 })
